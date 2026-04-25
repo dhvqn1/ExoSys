@@ -1,0 +1,1 @@
+{"version":3,"file":"habitabilityRequest.d.ts","sourceRoot":"","sources":["../../../src/generated/types/habitabilityRequest.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,WAAW,mBAAmB;IAClC,UAAU,EAAE,MAAM,CAAC;IACnB,iBAAiB,EAAE,MAAM,CAAC;IAC1B,oDAAoD;IACpD,UAAU,EAAE,MAAM,CAAC;IACnB,mBAAmB,EAAE,MAAM,CAAC;IAC5B,gBAAgB,EAAE,MAAM,CAAC;CAC1B"}

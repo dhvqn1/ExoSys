@@ -1,0 +1,385 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: EXOSYS — Exoplanet Intelligence System API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: ml
+    description: Machine learning predictions
+  - name: catalog
+    description: Exoplanet catalog and discovery timeline
+  - name: simulation
+    description: Procedural planet generation and habitability simulation
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /predict:
+    post:
+      operationId: predictExoplanet
+      tags: [ml]
+      summary: Predict exoplanet candidate
+      description: Classify a candidate signal as a confirmed exoplanet (1) or false positive (0) using a gradient boosted classifier trained on Kepler-style features.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictRequest"
+      responses:
+        "200":
+          description: Prediction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictResponse"
+  /catalog/planets:
+    get:
+      operationId: listCatalogPlanets
+      tags: [catalog]
+      summary: List the curated catalog of confirmed exoplanets used in the 3D scene
+      responses:
+        "200":
+          description: Planets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogPlanet"
+  /catalog/timeline:
+    get:
+      operationId: getDiscoveryTimeline
+      tags: [catalog]
+      summary: Discovery timeline
+      description: Yearly discovery counts of confirmed exoplanets.
+      responses:
+        "200":
+          description: Timeline
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimelineEntry"
+  /catalog/summary:
+    get:
+      operationId: getCatalogSummary
+      tags: [catalog]
+      summary: Aggregate stats over the catalog
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogSummary"
+  /simulation/generate:
+    post:
+      operationId: generatePlanet
+      tags: [simulation]
+      summary: Procedurally generate an exoplanet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratePlanetRequest"
+      responses:
+        "200":
+          description: Generated planet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedPlanet"
+  /simulation/habitability:
+    post:
+      operationId: simulateHabitability
+      tags: [simulation]
+      summary: Simulate habitability of a planet given star + orbit + atmosphere parameters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HabitabilityRequest"
+      responses:
+        "200":
+          description: Result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HabitabilityResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    PredictRequest:
+      type: object
+      required:
+        - orbitalPeriod
+        - planetRadius
+        - stellarTemperature
+        - semiMajorAxis
+        - transitDepth
+      properties:
+        orbitalPeriod:
+          type: number
+          description: Orbital period in days
+        planetRadius:
+          type: number
+          description: Planet radius in Earth radii
+        stellarTemperature:
+          type: number
+          description: Effective temperature of host star in Kelvin
+        semiMajorAxis:
+          type: number
+          description: Semi-major axis in AU
+        transitDepth:
+          type: number
+          description: Transit depth in parts per million
+    PredictResponse:
+      type: object
+      required:
+        - prediction
+        - probability
+        - interpretation
+        - featureContributions
+      properties:
+        prediction:
+          type: integer
+          description: 1 = confirmed candidate, 0 = false positive
+        probability:
+          type: number
+          description: Probability of being a confirmed planet
+        interpretation:
+          type: string
+          description: Brief scientific interpretation
+        featureContributions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureContribution"
+        model:
+          type: string
+          description: Identifier of the model that produced this prediction (e.g. "xgboost", "node-gbdt")
+    FeatureContribution:
+      type: object
+      required:
+        - feature
+        - contribution
+      properties:
+        feature:
+          type: string
+        contribution:
+          type: number
+    CatalogPlanet:
+      type: object
+      required:
+        - id
+        - name
+        - kind
+        - massEarth
+        - radiusEarth
+        - orbitalPeriodDays
+        - equilibriumTempK
+        - semiMajorAxisAU
+        - hostStar
+        - discoveryYear
+        - habitabilityIndex
+        - description
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          description: rocky | gas-giant | ice-giant | super-earth | lava | ocean
+        massEarth:
+          type: number
+        radiusEarth:
+          type: number
+        orbitalPeriodDays:
+          type: number
+        equilibriumTempK:
+          type: number
+        semiMajorAxisAU:
+          type: number
+        discoveryYear:
+          type: integer
+        habitabilityIndex:
+          type: number
+          description: 0..1 estimate of Earth-similarity index
+        description:
+          type: string
+        hostStar:
+          $ref: "#/components/schemas/HostStar"
+    HostStar:
+      type: object
+      required:
+        - name
+        - spectralType
+        - temperatureK
+        - radiusSun
+        - massSun
+      properties:
+        name:
+          type: string
+        spectralType:
+          type: string
+        temperatureK:
+          type: number
+        radiusSun:
+          type: number
+        massSun:
+          type: number
+    TimelineEntry:
+      type: object
+      required:
+        - year
+        - count
+        - cumulative
+        - notable
+      properties:
+        year:
+          type: integer
+        count:
+          type: integer
+        cumulative:
+          type: integer
+        notable:
+          type: string
+          description: Notable discovery from that year
+    CatalogSummary:
+      type: object
+      required:
+        - total
+        - rocky
+        - gasGiant
+        - habitableZone
+        - meanRadius
+        - meanOrbitalPeriod
+      properties:
+        total:
+          type: integer
+        rocky:
+          type: integer
+        gasGiant:
+          type: integer
+        habitableZone:
+          type: integer
+        meanRadius:
+          type: number
+        meanOrbitalPeriod:
+          type: number
+    GeneratePlanetRequest:
+      type: object
+      properties:
+        seed:
+          type: number
+          description: Optional seed for deterministic generation
+    GeneratedPlanet:
+      type: object
+      required:
+        - id
+        - name
+        - kind
+        - radiusEarth
+        - massEarth
+        - equilibriumTempK
+        - orbitalPeriodDays
+        - semiMajorAxisAU
+        - atmosphere
+        - color
+        - habitabilityIndex
+        - description
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+        radiusEarth:
+          type: number
+        massEarth:
+          type: number
+        equilibriumTempK:
+          type: number
+        orbitalPeriodDays:
+          type: number
+        semiMajorAxisAU:
+          type: number
+        atmosphere:
+          type: string
+        color:
+          type: string
+          description: Hex color derived from physical properties
+        habitabilityIndex:
+          type: number
+        description:
+          type: string
+    HabitabilityRequest:
+      type: object
+      required:
+        - distanceAU
+        - planetRadiusEarth
+        - atmosphere
+        - stellarTemperatureK
+        - stellarRadiusSun
+      properties:
+        distanceAU:
+          type: number
+        planetRadiusEarth:
+          type: number
+        atmosphere:
+          type: string
+          description: none | thin | earth-like | thick | venus-like
+        stellarTemperatureK:
+          type: number
+        stellarRadiusSun:
+          type: number
+    HabitabilityResponse:
+      type: object
+      required:
+        - equilibriumTempK
+        - surfaceTempK
+        - habitabilityIndex
+        - zone
+        - color
+        - interpretation
+      properties:
+        equilibriumTempK:
+          type: number
+        surfaceTempK:
+          type: number
+        habitabilityIndex:
+          type: number
+        zone:
+          type: string
+          description: too-hot | habitable | too-cold
+        color:
+          type: string
+        interpretation:
+          type: string
